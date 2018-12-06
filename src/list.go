@@ -14,6 +14,11 @@ func list(ps PathStructure) {
 		return
 	}
 
+	if ps.Region == "" {
+		listRegions()
+		return
+	}
+
 }
 
 func listProfiles() {
@@ -27,5 +32,37 @@ func listProfiles() {
 	}
 
 	tbl.Print()
+}
+
+func listRegions() {
+	fmt.Println("List regions")
+	// TODO: Pull the current list of regions from AWS
+	// TODO: We can do this using EC2/ECS endpoint to get supported regions
+	// TODO: We might want to cache that somehow?
+
+	regionsMock := []string{
+		"eu-west-1",
+	}
+
+	tbl := table.New("ID", "Name")
+	tbl.WithHeaderFormatter(tblHeaderFmt).WithFirstColumnFormatter(tblColumnFmt)
+
+	for id, r := range regionsMock {
+		tbl.AddRow(id, r)
+	}
+
+	tbl.Print()
+
+}
+
+func listClusters() {
+	fmt.Println("List clusters")
+}
+
+func listServices() {
+
+}
+
+func listTasks() {
 
 }

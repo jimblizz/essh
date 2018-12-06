@@ -14,7 +14,11 @@ type PathStructure struct {
 
 func (s *PathStructure) ParseFlags (c *cli.Context) {
 
-	if c.String("region") == "" {
+	if c.String("profile") != "" {
+		s.Profile = c.String("profile")
+	}
+
+	if c.String("region") != "" {
 		s.Region = c.String("region")
 	}
 
