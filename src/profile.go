@@ -45,3 +45,12 @@ func loadProfiles() {
 		return profiles[i].Name < profiles[j].Name
 	})
 }
+
+func IsValidProfileName(name string) bool {
+	for _, profile := range profiles {
+		if profile.Name == name {
+			return true
+		}
+	}
+	return false
+}

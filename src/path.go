@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/urfave/cli"
+    "github.com/urfave/cli"
 )
 
 type PathStructure struct {
