@@ -13,7 +13,7 @@ func list(ps PathStructure) {
 		return
 	}
 
-	if !IsValidProfileName(ps.Profile) {
+	if !ps.HasValidProfileName() {
 		fmt.Println(fmt.Sprintf("The requested profile %s does not exist in .aws/credentials. Valid profiles:", ps.Profile))
 		listProfiles()
 		return
@@ -24,7 +24,7 @@ func list(ps PathStructure) {
 		return
 	}
 
-	if !IsValidRegionName(ps.Region) {
+	if !ps.HasValidRegionName() {
 		fmt.Println(fmt.Sprintf("The requested region name %s is not available. Valid regions:", ps.Region))
 		listRegions()
 		return
@@ -34,6 +34,14 @@ func list(ps PathStructure) {
 		listClusters(ps)
 		return
 	}
+
+	if !ps.HasValidClusterName() {
+		fmt.Println(fmt.Sprintf("The requested cluster name %s was not found. Valid regions:", ps.Region))
+		listClusters(ps)
+		return
+	}
+
+	listServices(ps)
 
 }
 
@@ -83,8 +91,8 @@ func listClusters(ps PathStructure) {
 	tbl.Print()
 }
 
-func listServices() {
-
+func listServices(ps PathStructure) {
+	fmt.Println(fmt.Sprintf("List: %s > %s > %s > Services", ps.Profile, ps.Region, ps.Cluster))
 }
 
 func listTasks() {

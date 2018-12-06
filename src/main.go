@@ -54,6 +54,10 @@ func main()  {
 			Name: "region",
 			Usage: "The AWS region name",
 		},
+		cli.StringFlag{
+			Name: "cluster",
+			Usage: "The ECS cluster name",
+		},
 	}
 
 	app.Action = func(c *cli.Context) error {
