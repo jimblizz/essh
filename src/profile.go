@@ -17,8 +17,6 @@ type AwsProfile struct {
 }
 
 func loadProfiles() {
-	fmt.Print("Load profiles")
-
 	usr, usrErr := user.Current()
 	if usrErr != nil {
 		fmt.Println(usrErr.Error())
@@ -44,13 +42,4 @@ func loadProfiles() {
 	sort.Slice(profiles[:], func(i, j int) bool {
 		return profiles[i].Name < profiles[j].Name
 	})
-}
-
-func IsValidProfileName(name string) bool {
-	for _, profile := range profiles {
-		if profile.Name == name {
-			return true
-		}
-	}
-	return false
 }
