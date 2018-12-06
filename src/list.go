@@ -4,7 +4,8 @@ import (
 	"fmt"
 
 	"github.com/rodaine/table"
-	"github.com/davecgh/go-spew/spew"
+	"github.com/aws/aws-sdk-go/service/ecs"
+	"github.com/aws/aws-sdk-go/aws/awserr"
 )
 
 func list(ps PathStructure) {
@@ -67,41 +68,36 @@ func listRegions() {
 func listClusters(ps PathStructure) {
 	fmt.Println("List clusters")
 
-	// Load session from shared config
-	spew.Dump(ps)
+	svc, err := NewEcsClient(ps)
+	if err != nil {
+		fmt.Println(err.Error())
+		return
+	}
 
-	//sess := session.Must(session.NewSessionWithOptions(session.Options{
-	//	// TODO: Region should be changeable
-	//	Config: aws.Config{Region: aws.String("eu-west-1")},
-	//	Profile: "jim-tech",
-	//}))
-	//
-	//svc := ecs.New(sess)
-	//
-	//input := &ecs.ListClustersInput{}
-	//
-	//result, err := svc.ListClusters(input)
-	//if err != nil {
-	//	if aerr, ok := err.(awserr.Error); ok {
-	//		switch aerr.Code() {
-	//		case ecs.ErrCodeServerException:
-	//			fmt.Println(ecs.ErrCodeServerException, aerr.Error())
-	//		case ecs.ErrCodeClientException:
-	//			fmt.Println(ecs.ErrCodeClientException, aerr.Error())
-	//		case ecs.ErrCodeInvalidParameterException:
-	//			fmt.Println(ecs.ErrCodeInvalidParameterException, aerr.Error())
-	//		default:
-	//			fmt.Println(aerr.Error())
-	//		}
-	//	} else {
-	//		// Print the error, cast err to awserr.Error to get the Code and
-	//		// Message from an error.
-	//		fmt.Println(err.Error())
-	//	}
-	//	return
-	//}
-	//
-	//fmt.Println(result)
+	input := &ecs.ListClustersInput{}
+
+	result, err := svc.ListClusters(input)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok {
+			switch aerr.Code() {
+			case ecs.ErrCodeServerException:
+				fmt.Println(ecs.ErrCodeServerException, aerr.Error())
+			case ecs.ErrCodeClientException:
+				fmt.Println(ecs.ErrCodeClientException, aerr.Error())
+			case ecs.ErrCodeInvalidParameterException:
+				fmt.Println(ecs.ErrCodeInvalidParameterException, aerr.Error())
+			default:
+				fmt.Println(aerr.Error())
+			}
+		} else {
+			// Print the error, cast err to awserr.Error to get the Code and
+			// Message from an error.
+			fmt.Println(err.Error())
+		}
+		return
+	}
+
+	fmt.Println(result)
 }
 
 func listServices() {
