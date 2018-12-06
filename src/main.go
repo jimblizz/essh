@@ -50,6 +50,10 @@ func main()  {
 			Name: "profile",
 			Usage: "The AWS profile name",
 		},
+		cli.StringFlag{
+			Name: "region",
+			Usage: "The AWS region name",
+		},
 	}
 
 	app.Action = func(c *cli.Context) error {

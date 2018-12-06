@@ -22,8 +22,10 @@ func (s *PathStructure) ParseFlags (c *cli.Context) {
 		s.Region = c.String("region")
 	}
 
-	// TODO: Region
-	// TODO: Cluster
+	if c.String("cluster") != "" {
+	    s.Cluster = c.String("cluster")
+    }
+
+	// TODO: Service
 	// TODO: Task
-	// TODO: Container
 }

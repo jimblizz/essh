@@ -19,6 +19,11 @@ func list(ps PathStructure) {
 		return
 	}
 
+	if ps.Cluster == "" {
+		listClusters()
+		return
+	}
+
 }
 
 func listProfiles() {
