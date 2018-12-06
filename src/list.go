@@ -4,7 +4,6 @@ import (
 	"fmt"
 
 	"github.com/rodaine/table"
-	"github.com/aws/aws-sdk-go/service/ecs"
 )
 
 func list(ps PathStructure) {
@@ -67,26 +66,7 @@ func listRegions() {
 func listClusters(ps PathStructure) {
 	fmt.Println(fmt.Sprintf("List: %s > %s > Clusters", ps.Profile, ps.Region))
 
-	// New ECS client
-	svc, err := NewEcsClient(ps)
-	if err != nil {
-		fmt.Println(err.Error())
-		return
-	}
-
-	// Get a list of clusters
-	listInput := &ecs.ListClustersInput{}
-	clusters, err := svc.ListClusters(listInput)
-	if err != nil {
-		HandleAwsError(err)
-		return
-	}
-
-	// Get more data on these clusters
-	describeInput := &ecs.DescribeClustersInput{
-		Clusters: clusters.ClusterArns,
-	}
-	results, err := svc.DescribeClusters(describeInput)
+	clusters, err := GetClusterList(ps)
 	if err != nil {
 		HandleAwsError(err)
 		return
@@ -96,7 +76,7 @@ func listClusters(ps PathStructure) {
 	tbl := table.New("ID", "Name", "Running tasks", "Pending tasks", "Instances")
 	tbl.WithHeaderFormatter(tblHeaderFmt).WithFirstColumnFormatter(tblColumnFmt)
 
-	for id, c := range results.Clusters {
+	for id, c := range clusters.Clusters {
 		tbl.AddRow(id, *c.ClusterName, *c.RunningTasksCount, *c.PendingTasksCount, *c.RegisteredContainerInstancesCount)
 	}
 
