@@ -5,7 +5,6 @@ import (
 
 	"github.com/rodaine/table"
 	"github.com/aws/aws-sdk-go/service/ecs"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 )
 
 func list(ps PathStructure) {
@@ -68,36 +67,40 @@ func listRegions() {
 func listClusters(ps PathStructure) {
 	fmt.Println("List clusters")
 
+	// New ECS client
 	svc, err := NewEcsClient(ps)
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
 
-	input := &ecs.ListClustersInput{}
-
-	result, err := svc.ListClusters(input)
+	// Get a list of clusters
+	listInput := &ecs.ListClustersInput{}
+	clusters, err := svc.ListClusters(listInput)
 	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok {
-			switch aerr.Code() {
-			case ecs.ErrCodeServerException:
-				fmt.Println(ecs.ErrCodeServerException, aerr.Error())
-			case ecs.ErrCodeClientException:
-				fmt.Println(ecs.ErrCodeClientException, aerr.Error())
-			case ecs.ErrCodeInvalidParameterException:
-				fmt.Println(ecs.ErrCodeInvalidParameterException, aerr.Error())
-			default:
-				fmt.Println(aerr.Error())
-			}
-		} else {
-			// Print the error, cast err to awserr.Error to get the Code and
-			// Message from an error.
-			fmt.Println(err.Error())
-		}
+		HandleAwsError(err)
 		return
 	}
 
-	fmt.Println(result)
+	// Get more data on these clusters
+	describeInput := &ecs.DescribeClustersInput{
+		Clusters: clusters.ClusterArns,
+	}
+	results, err := svc.DescribeClusters(describeInput)
+	if err != nil {
+		HandleAwsError(err)
+		return
+	}
+
+	// Output the results in a nice table
+	tbl := table.New("ID", "Name", "Running tasks", "Pending tasks", "Instances")
+	tbl.WithHeaderFormatter(tblHeaderFmt).WithFirstColumnFormatter(tblColumnFmt)
+
+	for id, c := range results.Clusters {
+		tbl.AddRow(id, *c.ClusterName, *c.RunningTasksCount, *c.PendingTasksCount, *c.RegisteredContainerInstancesCount)
+	}
+
+	tbl.Print()
 }
 
 func listServices() {
