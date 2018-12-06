@@ -65,7 +65,7 @@ func listRegions() {
 }
 
 func listClusters(ps PathStructure) {
-	fmt.Println("List clusters")
+	fmt.Println(fmt.Sprintf("List: %s > %s > Clusters", ps.Profile, ps.Region))
 
 	// New ECS client
 	svc, err := NewEcsClient(ps)
