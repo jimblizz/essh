@@ -133,11 +133,11 @@ func listContainers(ps PathStructure) {
 		return
 	}
 
-	tbl := table.New("ID", "Container", "Status", "Host instance")
+	tbl := table.New("ID", "Container", "Status", "Host instance", "Public IP", "SSH Keypair")
 	tbl.WithHeaderFormatter(tblHeaderFmt).WithFirstColumnFormatter(tblColumnFmt)
 
 	for i, c := range containers {
-		tbl.AddRow(i, c.Container, c.Status, c.Instance)
+		tbl.AddRow(i, c.Container, c.Status, c.Instance.Ec2InstanceId, c.Instance.PublicIpAddress, c.Instance.KeyName)
 	}
 
 	tbl.Print()

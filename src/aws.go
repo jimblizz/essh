@@ -8,6 +8,7 @@ import (
     "github.com/aws/aws-sdk-go/aws/awserr"
     "sort"
     "strings"
+    "github.com/aws/aws-sdk-go/service/ec2"
 )
 
 
@@ -46,28 +47,45 @@ func (d *ServiceDigest) Load (s ecs.Service) {
 type ContainerDigest struct {
     Container string
     Status string
-    Instance string
+    InstanceArn string
+    Instance InstanceDigest
 }
 
 func (d *ContainerDigest) Load (t *ecs.Task, c *ecs.Container, instanceMap map[string]InstanceDigest) {
    d.Container = *c.Name
    d.Status = *c.LastStatus
-   d.Instance = *t.ContainerInstanceArn
+   d.InstanceArn = *t.ContainerInstanceArn
 
-   if val, ok := instanceMap[d.Instance]; ok {
-       d.Instance = val.Ec2InstanceId
+   if val, ok := instanceMap[d.InstanceArn]; ok {
+      d.Instance = val
    }
 }
 
 type InstanceDigest struct {
     ContainerInstanceArn string
     Ec2InstanceId string
+    PublicIpAddress string
+    KeyName string
 }
 
 func (d *InstanceDigest) Load (i *ecs.ContainerInstance) {
     d.ContainerInstanceArn = *i.ContainerInstanceArn
     d.Ec2InstanceId = *i.Ec2InstanceId
+}
 
+func (d *InstanceDigest) AddFullData (i *ec2.Instance) {
+
+    d.PublicIpAddress = *i.PublicIpAddress
+    d.KeyName = *i.KeyName
+
+    // ImageId
+    // InstanceId
+    // InstanceType
+    // KeyName
+    // PublicIpAddress
+    // PublicDnsName
+    // PrivateIpAddress
+    // SecurityGroups[].GroupId
 }
 
 func HandleAwsError (err error) {
@@ -106,6 +124,15 @@ func NewEcsClient (ps PathStructure) (svc *ecs.ECS, err error) {
         return
     }
     svc = ecs.New(sess)
+    return
+}
+
+func NewEc2Client (ps PathStructure) (svc *ec2.EC2, err error) {
+    sess, err := NewAwsSession(ps)
+    if err != nil {
+        return
+    }
+    svc = ec2.New(sess)
     return
 }
 
@@ -222,11 +249,48 @@ func GetClusterInstanceMap (ps PathStructure) (instancesMap map[string]InstanceD
     }
     result, err := svc.DescribeContainerInstances(describeInput)
 
+
+    var listOfInstanceIdPtrs []*string
+
     for _, ins := range result.ContainerInstances {
         var d InstanceDigest
         d.Load(ins)
         instancesMap[d.ContainerInstanceArn] = d
+
+        listOfInstanceIdPtrs = append(listOfInstanceIdPtrs, ins.Ec2InstanceId)
     }
+
+    // TODO: For each of these, we would like to know hostname/IP/key
+
+    ec2svc, err := NewEc2Client(ps)
+    if err != nil {
+       HandleAwsError(err)
+       return
+    }
+
+    ec2DescribeInput := &ec2.DescribeInstancesInput{
+       InstanceIds: listOfInstanceIdPtrs,
+    }
+    ec2Result, err := ec2svc.DescribeInstances(ec2DescribeInput)
+
+    for _, reservation := range ec2Result.Reservations {
+       for _, instance := range reservation.Instances {
+
+
+           for dKey, d := range instancesMap {
+               if d.Ec2InstanceId == *instance.InstanceId {
+
+                   d.AddFullData(instance)
+                   instancesMap[dKey] = d
+
+                   break
+               }
+           }
+       }
+    }
+
+    //os.Exit(0)
+
 
     return
 }
