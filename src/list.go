@@ -41,8 +41,14 @@ func list(ps PathStructure) {
 		return
 	}
 
-	listServices(ps)
+	if ps.Service == "" {
+		listServices(ps)
+		return
+	}
 
+	listContainers(ps)
+
+	return
 }
 
 func listProfiles() {
@@ -112,6 +118,29 @@ func listServices(ps PathStructure) {
 	return
 }
 
-func listTasks() {
+func listContainers(ps PathStructure) {
+	fmt.Println(fmt.Sprintf("List: %s > %s > %s > %s > Running", ps.Profile, ps.Region, ps.Cluster, ps.Service))
 
+	instanceMap, err := GetClusterInstanceMap(ps)
+	if err != nil {
+		HandleAwsError(err)
+		return
+	}
+
+	containers, err := GetContainerList(ps, instanceMap)
+	if err != nil {
+		HandleAwsError(err)
+		return
+	}
+
+	tbl := table.New("ID", "Container", "Status", "Host instance")
+	tbl.WithHeaderFormatter(tblHeaderFmt).WithFirstColumnFormatter(tblColumnFmt)
+
+	for i, c := range containers {
+		tbl.AddRow(i, c.Container, c.Status, c.Instance)
+	}
+
+	tbl.Print()
+
+	return
 }

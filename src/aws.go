@@ -43,6 +43,33 @@ func (d *ServiceDigest) Load (s ecs.Service) {
     }
 }
 
+type ContainerDigest struct {
+    Container string
+    Status string
+    Instance string
+}
+
+func (d *ContainerDigest) Load (t *ecs.Task, c *ecs.Container, instanceMap map[string]InstanceDigest) {
+   d.Container = *c.Name
+   d.Status = *c.LastStatus
+   d.Instance = *t.ContainerInstanceArn
+
+   if val, ok := instanceMap[d.Instance]; ok {
+       d.Instance = val.Ec2InstanceId
+   }
+}
+
+type InstanceDigest struct {
+    ContainerInstanceArn string
+    Ec2InstanceId string
+}
+
+func (d *InstanceDigest) Load (i *ecs.ContainerInstance) {
+    d.ContainerInstanceArn = *i.ContainerInstanceArn
+    d.Ec2InstanceId = *i.Ec2InstanceId
+
+}
+
 func HandleAwsError (err error) {
     if aerr, ok := err.(awserr.Error); ok {
         switch aerr.Code() {
@@ -165,6 +192,83 @@ func GetServiceList (ps PathStructure) (digest []ServiceDigest, err error) {
     sort.Slice(digest[:], func(i, j int) bool {
         return digest[i].ServiceName < digest[j].ServiceName
     })
+
+    return
+}
+
+func GetClusterInstanceMap (ps PathStructure) (instancesMap map[string]InstanceDigest, err error) {
+
+    instancesMap = make(map[string]InstanceDigest)
+
+    // New ECS client
+    svc, err := NewEcsClient(ps)
+    if err != nil {
+        fmt.Println(err.Error())
+        return
+    }
+
+    listInput := &ecs.ListContainerInstancesInput{
+       Cluster: &ps.Cluster,
+       MaxResults: aws.Int64(100),
+    }
+    list, err := svc.ListContainerInstances(listInput)
+    if err != nil {
+       return
+    }
+
+    describeInput := &ecs.DescribeContainerInstancesInput{
+        Cluster: &ps.Cluster,
+        ContainerInstances: list.ContainerInstanceArns,
+    }
+    result, err := svc.DescribeContainerInstances(describeInput)
+
+    for _, ins := range result.ContainerInstances {
+        var d InstanceDigest
+        d.Load(ins)
+        instancesMap[d.ContainerInstanceArn] = d
+    }
+
+    return
+}
+
+func GetContainerList (ps PathStructure, instanceMap map[string]InstanceDigest) (containers []ContainerDigest, err error) {
+
+    // New ECS client
+    svc, err := NewEcsClient(ps)
+    if err != nil {
+        fmt.Println(err.Error())
+        return
+    }
+
+    // TODO: Validate service name?
+
+    // Get a list of tasks
+    listInput := &ecs.ListTasksInput{
+        Cluster: &ps.Cluster,
+        ServiceName: &ps.Service,
+        MaxResults: aws.Int64(100),
+    }
+
+    list, err := svc.ListTasks(listInput)
+    if err != nil {
+        return
+    }
+
+    // Get more data on these services
+    describeInput := &ecs.DescribeTasksInput{
+        Cluster: &ps.Cluster,
+        Tasks: list.TaskArns,
+    }
+    result, err := svc.DescribeTasks(describeInput)
+
+    // Build digests
+    for _, t := range result.Tasks {
+        for _, c := range t.Containers {
+            var d ContainerDigest
+            d.Load(t, c, instanceMap)
+            containers = append(containers, d)
+        }
+    }
 
     return
 }

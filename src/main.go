@@ -58,6 +58,10 @@ func main()  {
 			Name: "cluster",
 			Usage: "The ECS cluster name",
 		},
+        cli.StringFlag{
+            Name: "service",
+            Usage: "The ECS service name",
+        },
 	}
 
 	app.Action = func(c *cli.Context) error {

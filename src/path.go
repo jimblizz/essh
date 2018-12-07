@@ -8,8 +8,7 @@ type PathStructure struct {
 	Profile string
 	Region string
 	Cluster string
-	Task string
-	Container string
+	Service string
 }
 
 func (s *PathStructure) ParseFlags (c *cli.Context) {
@@ -26,8 +25,9 @@ func (s *PathStructure) ParseFlags (c *cli.Context) {
 	    s.Cluster = c.String("cluster")
     }
 
-	// TODO: Service
-	// TODO: Task
+	if c.String("service") != "" {
+	    s.Service = c.String("service")
+    }
 }
 
 func (s PathStructure) HasValidProfileName() bool {
@@ -62,3 +62,5 @@ func (s PathStructure) HasValidClusterName() bool {
     }
     return false
 }
+
+// TODO: HasValisServiceName()
