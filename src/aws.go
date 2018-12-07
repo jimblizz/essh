@@ -102,6 +102,11 @@ func GetClusterList (ps PathStructure) (clusters *ecs.DescribeClustersOutput, er
         Clusters: list.ClusterArns,
     }
     clusters, err = svc.DescribeClusters(describeInput)
+
+    sort.Slice(clusters.Clusters[:], func(i, j int) bool {
+        return *clusters.Clusters[i].ClusterName < *clusters.Clusters[j].ClusterName
+    })
+
     return
 }
 

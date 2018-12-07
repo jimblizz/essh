@@ -80,8 +80,6 @@ func listClusters(ps PathStructure) {
 		return
 	}
 
-	// TODO: Sort clusters A-Z
-
 	// Output the results in a nice table
 	tbl := table.New("ID", "Name", "Running tasks", "Pending tasks", "Instances")
 	tbl.WithHeaderFormatter(tblHeaderFmt).WithFirstColumnFormatter(tblColumnFmt)
