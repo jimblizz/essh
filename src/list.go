@@ -80,6 +80,8 @@ func listClusters(ps PathStructure) {
 		return
 	}
 
+	// TODO: Sort clusters A-Z
+
 	// Output the results in a nice table
 	tbl := table.New("ID", "Name", "Running tasks", "Pending tasks", "Instances")
 	tbl.WithHeaderFormatter(tblHeaderFmt).WithFirstColumnFormatter(tblColumnFmt)
@@ -93,6 +95,25 @@ func listClusters(ps PathStructure) {
 
 func listServices(ps PathStructure) {
 	fmt.Println(fmt.Sprintf("List: %s > %s > %s > Services", ps.Profile, ps.Region, ps.Cluster))
+
+	services, err := GetServiceList(ps)
+	if err != nil {
+		HandleAwsError(err)
+		return
+	}
+
+	//spew.Dump(services)
+
+	tbl := table.New("ID", "Name", "Task definition", "Running", "Pending", "Desired", "Role", "Status")
+	tbl.WithHeaderFormatter(tblHeaderFmt).WithFirstColumnFormatter(tblColumnFmt)
+
+	for i, s := range services {
+		tbl.AddRow(i, s.ServiceName, s.TaskDefinition, s.RunningCount, s.PendingCount, s.DesiredCount, s.Role, s.Status)
+	}
+
+	tbl.Print()
+
+	return
 }
 
 func listTasks() {
