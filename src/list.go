@@ -102,8 +102,6 @@ func listServices(ps PathStructure) {
 		return
 	}
 
-	//spew.Dump(services)
-
 	tbl := table.New("ID", "Name", "Task definition", "Running", "Pending", "Desired", "Role", "Status")
 	tbl.WithHeaderFormatter(tblHeaderFmt).WithFirstColumnFormatter(tblColumnFmt)
 

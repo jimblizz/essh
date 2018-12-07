@@ -115,27 +115,46 @@ func GetServiceList (ps PathStructure) (digest []ServiceDigest, err error) {
     }
 
     // Get a list of services
+    // TODO: We are limited to 100 services per cluster, this could be an issue later?
     listInput := &ecs.ListServicesInput{
        Cluster: &ps.Cluster,
+       MaxResults: aws.Int64(100),
     }
     list, err := svc.ListServices(listInput)
     if err != nil {
        return
     }
 
-    // TODO: We can only describe 10 services at once, so we need to paginate
+    var pageHolder []*string
+    var chunkSize = 10
+    var counter int
 
-    // Get more data on these services
-    describeInput := &ecs.DescribeServicesInput{
-        Cluster: &ps.Cluster,
-        Services: list.ServiceArns,
-    }
-    services, err := svc.DescribeServices(describeInput)
+    for i, arn := range list.ServiceArns {
+        pageHolder = append(pageHolder, arn)
+        counter++
 
-    for _, s := range services.Services {
-        var d ServiceDigest
-        d.Load(*s)
-        digest = append(digest, d)
+        if counter >= chunkSize || i >= len(list.ServiceArns)-1 {
+
+            // Get more data on these services
+            describeInput := &ecs.DescribeServicesInput{
+               Cluster: &ps.Cluster,
+               Services: pageHolder,
+            }
+            services, err := svc.DescribeServices(describeInput)
+            if err != nil {
+               HandleAwsError(err)
+               break
+            }
+
+            for _, s := range services.Services {
+               var d ServiceDigest
+               d.Load(*s)
+               digest = append(digest, d)
+            }
+
+            pageHolder = make([]*string, 0)
+            counter = 0
+        }
     }
 
     sort.Slice(digest[:], func(i, j int) bool {
