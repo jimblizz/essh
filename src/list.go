@@ -1,9 +1,8 @@
 package main
 
 import (
-	"fmt"
-
-	"github.com/rodaine/table"
+    "fmt"
+    "github.com/rodaine/table"
 )
 
 func list(ps PathStructure) {
@@ -46,7 +45,21 @@ func list(ps PathStructure) {
 		return
 	}
 
-	listContainers(ps)
+    if !ps.HasValidServiceName() {
+        fmt.Println(fmt.Sprintf("The requested service %s was not found. Valid containers:", ps.Service))
+        listServices(ps)
+        return
+    }
+
+	if ps.Container == "" {
+        listContainers(ps)
+        return
+    }
+
+	// TODO: Check is valid container UUID
+
+	// Redirect to SSH action!
+    shellOpenSession(ps)
 
 	return
 }
