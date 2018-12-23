@@ -79,20 +79,25 @@ func sshSession (c ContainerDigest) {
     }
     defer session.Close()
 
-
     // TODO: Multiple commands: https://stackoverflow.com/questions/24440193/golang-ssh-how-to-run-multiple-commands-on-the-same-session
     //shellExec(session, "docker ps -q")
     //shellExec(session, "docker ps -a")
+    containerId := shellGetDockerId(session, c)
+    fmt.Println(containerId)
 
+    // TODO: We need to be using an interactive SSH session to proceed
+
+    os.Exit(0)
+}
+
+func shellGetDockerId (session *ssh.Session, c ContainerDigest) string {
     curlCommand := fmt.Sprintf("curl http://localhost:51678/v1/tasks?arn=%s", c.TaskArn)
     out, err := session.CombinedOutput(curlCommand)
     if err != nil {
         fmt.Println(err)
     }
 
-    json := string(out)
-
-    tasks := gjson.Get(json, "Tasks")
+    tasks := gjson.Get(string(out), "Tasks")
 
     if tasks.IsArray() {
         for _, task := range tasks.Array() {
@@ -105,14 +110,8 @@ func sshSession (c ContainerDigest) {
                         // In theory we should have unique names within a give tasks
                         // Other deploying versions would show as a different task, so we know this would be the correct container
                         if container.Get("Name").String() == c.Container {
-
-
                             containerId := container.Get("DockerId").String()
-                            fmt.Println(containerId)
-
-                            // TODO: We need to be using an interactive SSH session to proceed
-
-                            os.Exit(0)
+                            return containerId
                         }
 
                     }
@@ -122,5 +121,5 @@ func sshSession (c ContainerDigest) {
         }
     }
 
-    os.Exit(0)
+    return ""
 }
