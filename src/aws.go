@@ -45,6 +45,8 @@ func (d *ServiceDigest) Load (s ecs.Service) {
 }
 
 type ContainerDigest struct {
+    UUID string
+    ContainerArn string
     Container string
     Status string
     InstanceArn string
@@ -53,9 +55,14 @@ type ContainerDigest struct {
 }
 
 func (d *ContainerDigest) Load (t *ecs.Task, c *ecs.Container, instanceMap map[string]InstanceDigest) {
-   d.Container = *c.Name
-   d.Status = *c.LastStatus
-   d.InstanceArn = *t.ContainerInstanceArn
+
+    d.ContainerArn = *c.ContainerArn
+
+    i := strings.Index(d.ContainerArn, "/")
+    d.UUID = d.ContainerArn[i+1:]
+    d.Container = *c.Name
+    d.Status = *c.LastStatus
+    d.InstanceArn = *t.ContainerInstanceArn
 
     if t.TaskDefinitionArn != nil {
         d.TaskRevision = *t.TaskDefinitionArn
@@ -63,9 +70,9 @@ func (d *ContainerDigest) Load (t *ecs.Task, c *ecs.Container, instanceMap map[s
         d.TaskRevision = d.TaskRevision[i+1:]
     }
 
-   if val, ok := instanceMap[d.InstanceArn]; ok {
-      d.Instance = val
-   }
+    if val, ok := instanceMap[d.InstanceArn]; ok {
+       d.Instance = val
+    }
 }
 
 type InstanceDigest struct {

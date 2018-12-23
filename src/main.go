@@ -67,6 +67,10 @@ func main()  {
             Name: "service",
             Usage: "The ECS service name",
         },
+		cli.StringFlag{
+			Name: "container",
+			Usage: "The running container to connect to",
+		},
 	}
 
 	app.Action = func(c *cli.Context) error {
