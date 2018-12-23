@@ -45,6 +45,7 @@ func (d *ServiceDigest) Load (s ecs.Service) {
 }
 
 type ContainerDigest struct {
+    TaskArn string
     UUID string
     ContainerArn string
     Container string
@@ -55,11 +56,12 @@ type ContainerDigest struct {
 }
 
 func (d *ContainerDigest) Load (t *ecs.Task, c *ecs.Container, instanceMap map[string]InstanceDigest) {
-
+    d.TaskArn = *t.TaskArn
     d.ContainerArn = *c.ContainerArn
 
     i := strings.Index(d.ContainerArn, "/")
     d.UUID = d.ContainerArn[i+1:]
+
     d.Container = *c.Name
     d.Status = *c.LastStatus
     d.InstanceArn = *t.ContainerInstanceArn
@@ -317,8 +319,6 @@ func GetContainerList (ps PathStructure, instanceMap map[string]InstanceDigest) 
         fmt.Println(err.Error())
         return
     }
-
-    // TODO: Validate service name?
 
     // Get a list of tasks
     listInput := &ecs.ListTasksInput{
