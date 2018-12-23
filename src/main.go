@@ -29,6 +29,7 @@ package main
 import (
 	"os"
 	"log"
+	"os/exec"
 
 	"github.com/urfave/cli"
 	"github.com/fatih/color"
@@ -38,6 +39,10 @@ var tblHeaderFmt = color.New(color.FgGreen, color.Underline).SprintfFunc()
 var tblColumnFmt = color.New(color.FgYellow).SprintfFunc()
 
 func main()  {
+
+	cmd := exec.Command("clear") // TODO: Support Windows
+	cmd.Stdout = os.Stdout
+	cmd.Run()
 
 	app := cli.NewApp()
 	app.Name = "essh"

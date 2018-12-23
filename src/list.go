@@ -133,12 +133,12 @@ func listContainers(ps PathStructure) {
 		return
 	}
 
-	tbl := table.New("ID", "Container", "Status", "Host instance", "Public IP", "SSH Keypair", "Shortcut")
+	tbl := table.New("ID", "Revision", "Status", "Host instance", "Public IP", "SSH Keypair", "Shortcut")
 	tbl.WithHeaderFormatter(tblHeaderFmt).WithFirstColumnFormatter(tblColumnFmt)
 
 	for i, c := range containers {
 		shortcut := fmt.Sprintf("ssh ec2-user@%s -i %s.pem", c.Instance.PublicIpAddress, c.Instance.KeyName)
-		tbl.AddRow(i, c.Container, c.Status, c.Instance.Ec2InstanceId, c.Instance.PublicIpAddress, c.Instance.KeyName, shortcut)
+		tbl.AddRow(i, c.TaskRevision, c.Status, c.Instance.Ec2InstanceId, c.Instance.PublicIpAddress, c.Instance.KeyName, shortcut)
 	}
 
 	tbl.Print()

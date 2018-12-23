@@ -1,14 +1,14 @@
 package main
 
 import (
-    "github.com/aws/aws-sdk-go/aws/session"
-    "github.com/aws/aws-sdk-go/aws"
-    "github.com/aws/aws-sdk-go/service/ecs"
     "fmt"
+    "github.com/aws/aws-sdk-go/aws"
     "github.com/aws/aws-sdk-go/aws/awserr"
+    "github.com/aws/aws-sdk-go/aws/session"
+    "github.com/aws/aws-sdk-go/service/ec2"
+    "github.com/aws/aws-sdk-go/service/ecs"
     "sort"
     "strings"
-    "github.com/aws/aws-sdk-go/service/ec2"
 )
 
 
@@ -49,12 +49,19 @@ type ContainerDigest struct {
     Status string
     InstanceArn string
     Instance InstanceDigest
+    TaskRevision string
 }
 
 func (d *ContainerDigest) Load (t *ecs.Task, c *ecs.Container, instanceMap map[string]InstanceDigest) {
    d.Container = *c.Name
    d.Status = *c.LastStatus
    d.InstanceArn = *t.ContainerInstanceArn
+
+    if t.TaskDefinitionArn != nil {
+        d.TaskRevision = *t.TaskDefinitionArn
+        i := strings.Index(d.TaskRevision, "/")
+        d.TaskRevision = d.TaskRevision[i+1:]
+    }
 
    if val, ok := instanceMap[d.InstanceArn]; ok {
       d.Instance = val
