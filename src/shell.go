@@ -1,6 +1,7 @@
 package main
 
 import (
+    "bufio"
     "fmt"
     "github.com/tidwall/gjson"
     "golang.org/x/crypto/ssh"
@@ -8,7 +9,9 @@ import (
     "io/ioutil"
     "net"
     "os"
+    "os/signal"
     "sync"
+    "syscall"
     "time"
 )
 
@@ -84,8 +87,7 @@ func sshSession (c ContainerDigest) {
     //containerId := shellGetDockerId(session, c)
     //fmt.Println(containerId)
 
-    // TODO: We need to be using an interactive SSH session to proceed
-
+    // We need to be using an interactive SSH session to proceed
     modes := ssh.TerminalModes{
         ssh.ECHO:          0,     // disable echoing
         ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
@@ -111,23 +113,64 @@ func sshSession (c ContainerDigest) {
 
     <-out // Ignore the first shell output, this is from setting up the session
 
+    // Listen for Ctrl-C events, and disconnect cleanly
+    // Listen for sigterm
+    // Watch for kill services
+    var gracefulStop = make(chan os.Signal)
+    signal.Notify(gracefulStop, syscall.SIGTERM)
+    signal.Notify(gracefulStop, syscall.SIGINT)
+
+    go func() {
+        sig := <-gracefulStop
+        fmt.Printf("Caught sig: %+v \n", sig)
+        fmt.Println("Closing connection")
+
+        session.Close()
+        client.Close()
+        os.Exit(0)
+    }()
+
     // First we need to use the ECS agent introspection too to find the container ID that we require
     // We will do this with a cURL call from inside the host
     in <- fmt.Sprintf("curl http://localhost:51678/v1/tasks?arn=%s", c.TaskArn)
     agentData := <-out
 
     containerId := shellGetDockerId(string(agentData), c)
+    if containerId == "" {
+        fmt.Println("Could not extract DockerId for the container")
+        session.Close()
+        os.Exit(0)
+    }
 
-    fmt.Println(containerId)
+    in <- fmt.Sprintf("docker exec -it %s /bin/sh", containerId)
+    fmt.Print(<-out)
 
-    //<-out //ignore the shell output
-    //in <- "ls -lhav"
-    //fmt.Printf("ls output: %s\n", <-out)
-    //
-    in <- "whoami"
-    fmt.Printf("whoami: %s\n", <-out)
+    fmt.Printf("Connected to %s.\n", c.Container)
+    fmt.Println("Type 'exit' to quit.")
 
-    in <- "exit"
+    in <- "pwd"
+    fmt.Print(<-out)
+
+    for {
+        reader := bufio.NewReader(os.Stdin)
+        fmt.Print("> ")
+        text, _ := reader.ReadString('\n')
+
+        if text == "exit\n" || text == "quit\n" {
+            fmt.Println("Closing connection")
+            break
+        }
+
+        in <- text
+        fmt.Println(<-out)
+    }
+
+    in <- "exit" // Exit container
+    fmt.Print(<-out)
+
+    in <- "exit" // Exit host
+    fmt.Print(<-out)
+
     session.Wait()
 
     os.Exit(0)
@@ -186,7 +229,8 @@ func MuxShell(w io.Writer, r io.Reader) (chan<- string, <-chan string) {
                 return
             }
             t += n
-            if buf[t-2] == '$' { // assuming the $PS1 == 'sh-4.3$ '
+            if buf[t-2] == '$' || buf[t-2] == '#' { // assuming the $PS1 == 'sh-4.3$ '
+                //fmt.Printf("DEBUG: |%s|\n", string(buf[t-2:]))
                 out <- string(buf[:t])
                 t = 0
                 wg.Done()
