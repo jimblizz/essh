@@ -81,12 +81,6 @@ func sshSession (c ContainerDigest) {
     }
     defer session.Close()
 
-    // TODO: Multiple commands: https://stackoverflow.com/questions/24440193/golang-ssh-how-to-run-multiple-commands-on-the-same-session
-    //shellExec(session, "docker ps -q")
-    //shellExec(session, "docker ps -a")
-    //containerId := shellGetDockerId(session, c)
-    //fmt.Println(containerId)
-
     // We need to be using an interactive SSH session to proceed
     modes := ssh.TerminalModes{
         ssh.ECHO:          0,     // disable echoing
