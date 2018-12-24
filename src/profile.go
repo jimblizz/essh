@@ -20,13 +20,13 @@ func loadProfiles() {
 	usr, usrErr := user.Current()
 	if usrErr != nil {
 		fmt.Println(usrErr.Error())
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	cfg, err := ini.Load(usr.HomeDir + "/.aws/credentials")
 	if err != nil {
 		fmt.Printf("Fail to read file: %v", err)
-		os.Exit(1)
+		os.Exit(0)
 	}
 
 	for _, val := range cfg.Sections() {

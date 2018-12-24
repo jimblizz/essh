@@ -133,6 +133,7 @@ func sshSession (c ContainerDigest) {
     if containerId == "" {
         fmt.Println("Could not extract DockerId for the container")
         session.Close()
+        client.Close()
         os.Exit(0)
     }
 
@@ -167,6 +168,8 @@ func sshSession (c ContainerDigest) {
 
     session.Wait()
 
+    session.Close()
+    client.Close()
     os.Exit(0)
 }
 

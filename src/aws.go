@@ -304,10 +304,6 @@ func GetClusterInstanceMap (ps PathStructure) (instancesMap map[string]InstanceD
            }
        }
     }
-
-    //os.Exit(0)
-
-
     return
 }
 

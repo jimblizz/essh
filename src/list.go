@@ -92,6 +92,10 @@ func getUserSelection() int {
     text, _ := reader.ReadString('\n')
     value := strings.TrimSuffix(text, "\n")
 
+    if value == "exit" {
+        os.Exit(0)
+    }
+
     integer, err := strconv.Atoi(value)
     if err != nil {
         fmt.Println("That's not an integer!")
