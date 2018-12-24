@@ -1,31 +1,53 @@
 package main
 
 import (
+    "bufio"
     "fmt"
     "github.com/rodaine/table"
+    "os"
+    "os/exec"
+    "os/signal"
+    "strconv"
+    "strings"
+    "syscall"
 )
 
 func list(ps PathStructure) {
+    cmd := exec.Command("clear") // TODO: Support Windows
+    cmd.Stdout = os.Stdout
+    cmd.Run()
+
+    // Listen for Ctrl-C events, and disconnect cleanly
+    // Listen for sigterm
+    // Watch for kill services
+    var gracefulStop = make(chan os.Signal)
+    signal.Notify(gracefulStop, syscall.SIGTERM)
+    signal.Notify(gracefulStop, syscall.SIGINT)
+
+    go func() {
+        <-gracefulStop
+        os.Exit(0)
+    }()
 
 	if ps.Profile == "" {
-		listProfiles()
+		listProfiles(ps)
 		return
 	}
 
 	if !ps.HasValidProfileName() {
 		fmt.Println(fmt.Sprintf("The requested profile %s does not exist in .aws/credentials. Valid profiles:", ps.Profile))
-		listProfiles()
+		listProfiles(ps)
 		return
 	}
 
 	if ps.Region == "" {
-		listRegions()
+		listRegions(ps)
 		return
 	}
 
 	if !ps.HasValidRegionName() {
 		fmt.Println(fmt.Sprintf("The requested region name %s is not available. Valid regions:", ps.Region))
-		listRegions()
+		listRegions(ps)
 		return
 	}
 
@@ -64,7 +86,24 @@ func list(ps PathStructure) {
 	return
 }
 
-func listProfiles() {
+func getUserSelection() int {
+    reader := bufio.NewReader(os.Stdin)
+    fmt.Print("Select ID > ")
+    text, _ := reader.ReadString('\n')
+    value := strings.TrimSuffix(text, "\n")
+
+    integer, err := strconv.Atoi(value)
+    if err != nil {
+        fmt.Println("That's not an integer!")
+        os.Exit(0)
+    }
+
+    return integer
+}
+
+func listProfiles(ps PathStructure) {
+    fmt.Println(fmt.Sprintf("List: Profiles"))
+
 	tbl := table.New("ID", "Name", "Access Key")
 	tbl.WithHeaderFormatter(tblHeaderFmt).WithFirstColumnFormatter(tblColumnFmt)
 
@@ -73,9 +112,18 @@ func listProfiles() {
 	}
 
 	tbl.Print()
+
+	i := getUserSelection()
+	if len(profiles) > i {
+        ps.Profile = profiles[i].Name
+        list(ps)
+    }
+	return
 }
 
-func listRegions() {
+func listRegions(ps PathStructure) {
+    fmt.Println(fmt.Sprintf("List: %s > Regions", ps.Profile))
+
 	// TODO: Pull the current list of regions from AWS
 	// TODO: We can do this using EC2/ECS endpoint to get supported regions
 	// TODO: We might want to cache that somehow?
@@ -88,26 +136,47 @@ func listRegions() {
 	}
 
 	tbl.Print()
+
+    i := getUserSelection()
+    if len(RegionsMock) > i {
+        ps.Region = RegionsMock[i]
+        list(ps)
+    }
+    return
 }
 
 func listClusters(ps PathStructure) {
 	fmt.Println(fmt.Sprintf("List: %s > %s > Clusters", ps.Profile, ps.Region))
 
-	clusters, err := GetClusterList(ps)
+	clustersOutput, err := GetClusterList(ps)
 	if err != nil {
 		HandleAwsError(err)
 		return
 	}
 
+	clusters := clustersOutput.Clusters
+
 	// Output the results in a nice table
 	tbl := table.New("ID", "Name", "Running tasks", "Pending tasks", "Instances")
 	tbl.WithHeaderFormatter(tblHeaderFmt).WithFirstColumnFormatter(tblColumnFmt)
 
-	for id, c := range clusters.Clusters {
+	for id, c := range clusters {
 		tbl.AddRow(id, *c.ClusterName, *c.RunningTasksCount, *c.PendingTasksCount, *c.RegisteredContainerInstancesCount)
 	}
 
 	tbl.Print()
+
+    i := getUserSelection()
+    if len(clusters) > i {
+        for ind, c := range clusters {
+            if ind == i {
+                ps.Cluster = *c.ClusterName
+                list(ps)
+                return
+            }
+        }
+    }
+    return
 }
 
 func listServices(ps PathStructure) {
@@ -128,6 +197,11 @@ func listServices(ps PathStructure) {
 
 	tbl.Print()
 
+    i := getUserSelection()
+    if len(services) > i {
+        ps.Service = services[i].ServiceName
+        list(ps)
+    }
 	return
 }
 
@@ -156,5 +230,10 @@ func listContainers(ps PathStructure) {
 
 	tbl.Print()
 
+    i := getUserSelection()
+    if len(containers) > i {
+        ps.Container = containers[i].UUID
+        list(ps)
+    }
 	return
 }
