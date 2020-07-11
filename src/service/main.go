@@ -27,7 +27,7 @@ package service
  */
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 	"os"
 	"os/exec"
 
@@ -37,6 +37,7 @@ import (
 
 var tblHeaderFmt = color.New(color.FgGreen, color.Underline).SprintfFunc()
 var tblColumnFmt = color.New(color.FgYellow).SprintfFunc()
+var SshKeys map[string]string
 
 func Run()  {
 
@@ -77,6 +78,9 @@ func Run()  {
 
 		// Before we can do anything, we need to load the profile data
 		loadProfiles()
+
+		// We also need to locate the SSH keys
+		SshKeys = getKeys()
 
 		action := c.Args().Get(0)
 		if action == "" {

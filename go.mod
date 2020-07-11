@@ -4,8 +4,10 @@ go 1.14
 
 require (
 	github.com/aws/aws-sdk-go v1.33.5
+	github.com/davecgh/go-spew v1.1.1
 	github.com/fatih/color v1.9.0
 	github.com/rodaine/table v1.0.1
+	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/goconvey v1.6.4 // indirect
 	github.com/tidwall/gjson v1.6.0
 	github.com/urfave/cli v1.22.4
